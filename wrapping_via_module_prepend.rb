@@ -43,10 +43,34 @@ puts
 puts "and now a benchmark"
 puts
 
+
+module MinimalWrapper
+  # this version doesn't do anything except call the original implementation.
+  # Any performance difference should thus be due solely to the usage of prepend
+  # & the anonymous module.
+  def wrap(method)
+    wrapper_module = Module.new do
+      define_method(method) do |*args|
+        super(*args)
+      end
+    end
+    prepend wrapper_module
+  end
+end
+
+class MinimallyWrapped
+  extend MinimalWrapper
+
+  def target(arg1, arg2)
+    "in target. args:[#{arg1}, #{arg2}]"
+  end
+  wrap :target
+end
+
 n = 1_000_000
 Benchmark.bmbm do |x|
   x.report('wrapped') do
-    n.times { Wrapped.new.target(5, 6) }
+    n.times { MinimallyWrapped.new.target(5, 6) }
   end
 
   x.report('unwrapped') do
